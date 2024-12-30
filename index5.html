@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebSocket Mouse Coordinates</title>
+</head>
+<body>
+
+    <h1>WebSocket Example</h1>
+    <input type="text" id="messageInput" placeholder="Type a message...">
+    <button id="sendButton">Send</button>
+    <div id="messages"></div>
+
+    <script>
+        const socket = new WebSocket('ws://localhost:8080');
+        let mouseCoordinates = { x: 0, y: 0 };
+        let isSending = false;
+
+        socket.addEventListener('open', () => {
+            console.log('Connected to the server');
+            startSendingCoordinates();
+        });
+
+        socket.addEventListener('close', () => {
+            console.log('Disconnected from the server');
+            stopSendingCoordinates();
+        });
+
+        // Update mouse coordinates on mouse move
+        document.addEventListener('mousemove', (event) => {
+            mouseCoordinates.x = event.clientX;
+            mouseCoordinates.y = event.clientY;
+            if (!isSending) {
+                startSendingCoordinates();
+            }
+        });
+
+        function startSendingCoordinates() {
+            isSending = true;
+            sendCoordinates();
+        }
+
+        function stopSendingCoordinates() {
+            isSending = false;
+        }
+
+        function sendCoordinates() {
+            if (isSending && socket.readyState === WebSocket.OPEN) {
+                socket.send(JSON.stringify(mouseCoordinates));
+                setTimeout(sendCoordinates, 100); // Send every 100 milliseconds
+            }
+        }
+
+ socket.addEventListener('message', (event) => {
+            const messagesDiv = document.getElementById('messages');
+            messagesDiv.innerHTML += `<p>${event.data}</p>`;
+            messagesDiv.scrollTop = messagesDiv.scrollHeight; // Auto-scroll to the bottom
+        });
+
+        document.getElementById('sendButton').addEventListener('click', () => {
+            const input = document.getElementById('messageInput');
+            const message = input.value.trim(); // Trim whitespace
+
+            if (message) {
+                socket.send(message);
+                input.value = ''; // Clear the input field
+            } else {
+                alert('Please enter a message to send.'); // Alert if the input is empty
+            }
+        });
+
+    </script>
+</body>
+</html>
